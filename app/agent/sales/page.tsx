@@ -13,6 +13,7 @@ import {
   Copy,
   Check,
   Zap,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,8 +28,10 @@ import {
   aryaSelfSale,
   type SelfSaleIntent,
 } from "@/lib/actions/sales-agent";
+import { geocode, searchPlaces } from "@/lib/actions/geo";
+import { getGeoProviderForCountry } from "@/lib/utils/geo-provider";
 
-type Tab = "find" | "outreach" | "conversation" | "close" | "selfsale";
+type Tab = "find" | "outreach" | "conversation" | "close" | "selfsale" | "geo";
 
 const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "find", label: "Find Prospects", icon: Target },
@@ -36,6 +39,7 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "conversation", label: "Conversation", icon: MessageCircle },
   { id: "close", label: "Close Deal", icon: Handshake },
   { id: "selfsale", label: "Sell Arya", icon: Zap },
+  { id: "geo", label: "Target Geo", icon: MapPin },
 ];
 
 function SalesAgentContent() {
@@ -74,6 +78,12 @@ function SalesAgentContent() {
   // Self-sale (Arya sells Arya)
   const [selfSaleIntent, setSelfSaleIntent] = useState<SelfSaleIntent>("find_prospects");
   const [selfSaleContext, setSelfSaleContext] = useState("");
+
+  // Target Geo
+  const [geoCountry, setGeoCountry] = useState("RU");
+  const [geoAddress, setGeoAddress] = useState("");
+  const [geoQuery, setGeoQuery] = useState("");
+  const [geoResult, setGeoResult] = useState<string | null>(null);
 
   function resetAndRun() {
     setError(null);
@@ -167,6 +177,45 @@ function SalesAgentContent() {
       setResult(output);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed. Check GEMINI_API_KEY.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleGeocode(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setGeoResult(null);
+    setIsLoading(true);
+    try {
+      const res = await geocode(geoAddress || "Moscow", geoCountry);
+      if (res) {
+        setGeoResult(`Provider: ${res.provider}\nAddress: ${res.formattedAddress}\nLat: ${res.lat}, Lng: ${res.lng}`);
+      } else {
+        setGeoResult("No result. Check API keys (TWO_GIS_API_KEY / GOOGLE_MAPS_API_KEY).");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Geocode failed.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleSearchPlaces(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setGeoResult(null);
+    setIsLoading(true);
+    try {
+      const places = await searchPlaces(geoQuery || "restaurant", {
+        countryCode: geoCountry,
+        city: geoAddress || undefined,
+      });
+      const provider = getGeoProviderForCountry(geoCountry);
+      const lines = places.map((p) => `• ${p.name} — ${p.address}`).join("\n");
+      setGeoResult(`Provider: ${provider}\n\nFound ${places.length} places:\n${lines || "No results."}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Search failed.");
     } finally {
       setIsLoading(false);
     }
@@ -482,6 +531,121 @@ function SalesAgentContent() {
               Generate
             </Button>
           </form>
+        )}
+
+        {activeTab === "geo" && (
+          <div className="space-y-6">
+            <Card className="border-white/10 bg-white/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-emerald-400" />
+                  Target Geo Areas
+                </CardTitle>
+                <CardDescription className="text-white/60">
+                  2GIS for Eurasia & Middle East · Google Maps for rest of world
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-white/80">
+                  <strong>Provider routing:</strong> RU, KZ, UA, AE, SA, TR, etc. → 2GIS · US, UK, DE, etc. → Google
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Country (ISO code)</Label>
+                    <select
+                      value={geoCountry}
+                      onChange={(e) => setGeoCountry(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-white/20 bg-white/5 px-3 py-2 text-white"
+                    >
+                      <option value="RU">RU (Russia) — 2GIS</option>
+                      <option value="KZ">KZ (Kazakhstan) — 2GIS</option>
+                      <option value="AE">AE (UAE) — 2GIS</option>
+                      <option value="SA">SA (Saudi Arabia) — 2GIS</option>
+                      <option value="TR">TR (Turkey) — 2GIS</option>
+                      <option value="US">US (USA) — Google</option>
+                      <option value="GB">GB (UK) — Google</option>
+                      <option value="DE">DE (Germany) — Google</option>
+                      <option value="FR">FR (France) — Google</option>
+                      <option value="IN">IN (India) — Google</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Provider for {geoCountry}</Label>
+                    <Input
+                      value={getGeoProviderForCountry(geoCountry).toUpperCase()}
+                      readOnly
+                      className="border-white/20 bg-white/5 text-white"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <form onSubmit={handleGeocode} className="space-y-4">
+              <Card className="border-white/10 bg-white/5">
+                <CardHeader>
+                  <CardTitle className="text-base">Test Geocode</CardTitle>
+                  <CardDescription className="text-white/60">
+                    Address → coordinates
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Address</Label>
+                    <Input
+                      placeholder="e.g. Moscow, Red Square"
+                      value={geoAddress}
+                      onChange={(e) => setGeoAddress(e.target.value)}
+                      className="border-white/20 bg-white/5 text-white placeholder:text-white/40"
+                    />
+                  </div>
+                  <Button type="submit" disabled={isLoading} variant="outline" className="border-white/20">
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />}
+                    Geocode
+                  </Button>
+                </CardContent>
+              </Card>
+            </form>
+
+            <form onSubmit={handleSearchPlaces} className="space-y-4">
+              <Card className="border-white/10 bg-white/5">
+                <CardHeader>
+                  <CardTitle className="text-base">Test Place Search</CardTitle>
+                  <CardDescription className="text-white/60">
+                    Find businesses in target area
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Search query</Label>
+                    <Input
+                      placeholder="e.g. logistics companies, restaurants"
+                      value={geoQuery}
+                      onChange={(e) => setGeoQuery(e.target.value)}
+                      className="border-white/20 bg-white/5 text-white placeholder:text-white/40"
+                    />
+                  </div>
+                  <Button type="submit" disabled={isLoading} variant="outline" className="border-white/20">
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />}
+                    Search Places
+                  </Button>
+                </CardContent>
+              </Card>
+            </form>
+
+            {(geoResult || result) && (
+              <Card className="border-white/10 bg-white/5">
+                <CardHeader>
+                  <CardTitle>Result</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <pre className="whitespace-pre-wrap font-sans text-sm text-white/90">
+                    {geoResult ?? result}
+                  </pre>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {error && (

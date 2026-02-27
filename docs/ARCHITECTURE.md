@@ -82,6 +82,29 @@ tasks (from onboarding)
 | `POST /api/telegram` | Telegram webhook |
 | `POST /api/stripe/webhook` | Subscription events |
 
+## Geo / Territory Setup (Sales)
+
+**Provider routing by region:**
+
+| Region | Provider | Use case |
+|--------|----------|----------|
+| Eurasia, Middle East | **2GIS** | Geocoding, places search, business data |
+| Rest of world | **Google Maps** | Geocoding, Places API |
+
+**2GIS coverage:** Russia, Kazakhstan, UAE, Uzbekistan, Cyprus, others in Eurasia & MENA.
+
+**Google Maps:** Americas, Europe (outside 2GIS), Asia-Pacific, Africa.
+
+**Data model:**
+```
+target_geo_areas (per tenant)
+  id, tenant_id, name, region_type (2gis | google)
+  bounds (polygon/bbox), country_codes[], cities[]
+  radius_km (optional), center_lat, center_lng
+```
+
+**Env vars:** `TWO_GIS_API_KEY`, `GOOGLE_MAPS_API_KEY`
+
 ## Next Build: Onboarding Chat
 
 1. **Chat UI** in dashboard (replace or augment current layout)

@@ -69,6 +69,15 @@
 | **Social links** | Planned | Smart links |
 | **SIP/PBX** | Future | Scale path |
 
+## Geo / Territory (Sales)
+
+| Region | Provider | Use |
+|--------|----------|-----|
+| **Eurasia, Middle East** | 2GIS | Geocoding, places search |
+| **Rest of world** | Google Maps | Geocoding, Places API |
+
+Target geo areas configurable per tenant. Used for sales territory setup, prospect filtering.
+
 ---
 
 ## Security (Core)
