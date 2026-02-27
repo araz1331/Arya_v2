@@ -16,12 +16,12 @@ export default function HomePage() {
         <div className="flex flex-wrap justify-center gap-4">
           <Card className="w-full max-w-xs">
             <CardHeader>
-              <CardTitle>Sales Agent / Hunter</CardTitle>
-              <CardDescription>AI-powered sales candidate sourcing and outreach</CardDescription>
+              <CardTitle>Universal Sales Agent</CardTitle>
+              <CardDescription>Find buyers, contact them, hold conversations, close deals—any industry</CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/agent/sales">
-                <Button className="w-full">Launch Hunter</Button>
+                <Button className="w-full">Launch Agent</Button>
               </Link>
             </CardContent>
           </Card>
