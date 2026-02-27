@@ -20,9 +20,11 @@ export default function HomePage() {
               <CardDescription>Create and configure AI agents</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="outline" className="w-full">
-                Coming soon
-              </Button>
+              <Link href="/features#agent-builder">
+                <Button variant="outline" className="w-full">
+                  Learn more
+                </Button>
+              </Link>
             </CardContent>
           </Card>
           <Card className="w-full max-w-xs">
@@ -31,9 +33,11 @@ export default function HomePage() {
               <CardDescription>Manage your subscription</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="outline" className="w-full">
-                Coming soon
-              </Button>
+              <Link href="/features#billing">
+                <Button variant="outline" className="w-full">
+                  Learn more
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
