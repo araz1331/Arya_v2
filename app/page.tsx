@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -9,6 +10,9 @@ export default function HomePage() {
         <p className="text-muted-foreground">
           AI-powered hiring platform. Production-grade, feature-based architecture.
         </p>
+        <Link href="/features">
+          <Button className="mb-6">View All Features</Button>
+        </Link>
         <div className="flex flex-wrap justify-center gap-4">
           <Card className="w-full max-w-xs">
             <CardHeader>
