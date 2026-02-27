@@ -14,6 +14,8 @@ import {
   Check,
   Zap,
   MapPin,
+  Send,
+  Phone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,12 +32,14 @@ import {
 } from "@/lib/actions/sales-agent";
 import { geocode, searchPlaces } from "@/lib/actions/geo";
 import { getGeoProviderForCountry } from "@/lib/utils/geo-provider";
+import { sendSalesEmail, initiateSalesCall } from "@/lib/actions/sales-outreach";
 
-type Tab = "find" | "outreach" | "conversation" | "close" | "selfsale" | "geo";
+type Tab = "find" | "outreach" | "conversation" | "close" | "selfsale" | "geo" | "send";
 
 const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "find", label: "Find Prospects", icon: Target },
   { id: "outreach", label: "Contact", icon: Mail },
+  { id: "send", label: "AI Send", icon: Send },
   { id: "conversation", label: "Conversation", icon: MessageCircle },
   { id: "close", label: "Close Deal", icon: Handshake },
   { id: "selfsale", label: "Sell Arya", icon: Zap },
@@ -84,6 +88,13 @@ function SalesAgentContent() {
   const [geoAddress, setGeoAddress] = useState("");
   const [geoQuery, setGeoQuery] = useState("");
   const [geoResult, setGeoResult] = useState<string | null>(null);
+
+  // AI Send (email + call)
+  const [emailTo, setEmailTo] = useState("");
+  const [emailProspectName, setEmailProspectName] = useState("");
+  const [callTo, setCallTo] = useState("");
+  const [callDuration, setCallDuration] = useState<"short" | "medium" | "long">("medium");
+  const [sendResult, setSendResult] = useState<string | null>(null);
 
   function resetAndRun() {
     setError(null);
@@ -216,6 +227,54 @@ function SalesAgentContent() {
       setGeoResult(`Provider: ${provider}\n\nFound ${places.length} places:\n${lines || "No results."}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Search failed.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleSendEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSendResult(null);
+    setIsLoading(true);
+    try {
+      const res = await sendSalesEmail({
+        to: emailTo,
+        prospectName: emailProspectName || undefined,
+        prospectContext: prospectContext || undefined,
+        productOrService: product || "our product/service",
+      });
+      if (res.success) {
+        setSendResult(`✓ Email sent to ${emailTo}\n${res.preview}`);
+      } else {
+        setSendResult(`✗ ${res.error}\n${res.preview || ""}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed. Check RESEND_API_KEY.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleMakeCall(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSendResult(null);
+    setIsLoading(true);
+    try {
+      const res = await initiateSalesCall({
+        to: callTo,
+        productOrService: product || "our product/service",
+        prospectContext: prospectContext || undefined,
+        callDuration,
+      });
+      if (res.success) {
+        setSendResult(`✓ Call initiated to ${callTo}\nCall SID: ${res.callSid}\n\nScript preview:\n${(res.script ?? "").slice(0, 200)}...`);
+      } else {
+        setSendResult(`✗ ${res.error}\n\nGenerated script:\n${res.script ?? ""}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed. Check Twilio config.");
     } finally {
       setIsLoading(false);
     }
@@ -404,6 +463,126 @@ function SalesAgentContent() {
               Generate Outreach
             </Button>
           </form>
+        )}
+
+        {activeTab === "send" && (
+          <div className="space-y-8">
+            <Card className="border-emerald-500/20 bg-emerald-500/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Send className="h-5 w-5 text-emerald-400" />
+                  AI Sales Email
+                </CardTitle>
+                <CardDescription className="text-white/60">
+                  Generate personalized email with Gemini and send via Resend
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSendEmail} className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Prospect Email</Label>
+                      <Input
+                        type="email"
+                        placeholder="prospect@company.com"
+                        value={emailTo}
+                        onChange={(e) => setEmailTo(e.target.value)}
+                        required
+                        className="border-white/20 bg-white/5 text-white placeholder:text-white/40"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Prospect Name (optional)</Label>
+                      <Input
+                        placeholder="John Smith"
+                        value={emailProspectName}
+                        onChange={(e) => setEmailProspectName(e.target.value)}
+                        className="border-white/20 bg-white/5 text-white placeholder:text-white/40"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Prospect Context (optional)</Label>
+                    <Input
+                      placeholder="VP Ops at 80-person logistics company"
+                      value={prospectContext}
+                      onChange={(e) => setProspectContext(e.target.value)}
+                      className="border-white/20 bg-white/5 text-white placeholder:text-white/40"
+                    />
+                  </div>
+                  <Button type="submit" disabled={isLoading} className="bg-emerald-600 hover:bg-emerald-500">
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                    Send AI Email
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card className="border-blue-500/20 bg-blue-500/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Phone className="h-5 w-5 text-blue-400" />
+                  AI Sales Call
+                </CardTitle>
+                <CardDescription className="text-white/60">
+                  Generate script with Gemini, initiate outbound call via Twilio. Prospect hears AI voice.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleMakeCall} className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Prospect Phone (E.164)</Label>
+                      <Input
+                        type="tel"
+                        placeholder="+15551234567"
+                        value={callTo}
+                        onChange={(e) => setCallTo(e.target.value)}
+                        required
+                        className="border-white/20 bg-white/5 text-white placeholder:text-white/40"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Call Length</Label>
+                      <select
+                        value={callDuration}
+                        onChange={(e) => setCallDuration(e.target.value as typeof callDuration)}
+                        className="flex h-10 w-full rounded-md border border-white/20 bg-white/5 px-3 py-2 text-white"
+                      >
+                        <option value="short">Short (30-45 sec)</option>
+                        <option value="medium">Medium (60-90 sec)</option>
+                        <option value="long">Long (90-120 sec)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Prospect Context (optional)</Label>
+                    <Input
+                      placeholder="VP Ops at 80-person logistics company"
+                      value={prospectContext}
+                      onChange={(e) => setProspectContext(e.target.value)}
+                      className="border-white/20 bg-white/5 text-white placeholder:text-white/40"
+                    />
+                  </div>
+                  <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-500">
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Phone className="mr-2 h-4 w-4" />}
+                    Make AI Call
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {sendResult && (
+              <Card className="border-white/10 bg-white/5">
+                <CardHeader>
+                  <CardTitle>Result</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <pre className="whitespace-pre-wrap font-sans text-sm text-white/90">{sendResult}</pre>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {activeTab === "conversation" && (

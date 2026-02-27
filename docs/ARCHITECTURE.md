@@ -81,6 +81,7 @@ tasks (from onboarding)
 | `POST /api/twilio/whatsapp` | WhatsApp webhook |
 | `POST /api/telegram` | Telegram webhook |
 | `POST /api/stripe/webhook` | Subscription events |
+| `GET /api/twilio/voice/outbound` | TwiML for AI sales calls |
 
 ## Geo / Territory Setup (Sales)
 
