@@ -6,22 +6,30 @@ export default function HomePage() {
   return (
     <div role="main" className="flex min-h-screen flex-col items-center justify-center p-8">
       <div className="max-w-2xl space-y-8 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">HireArya</h1>
+        <h1 className="text-4xl font-bold tracking-tight">Arya</h1>
         <p className="text-muted-foreground">
-          AI-powered hiring platform. Production-grade, feature-based architecture.
+          AI employee platform for SMEs. Start with Sales Arya—find buyers, contact, converse, close.
         </p>
-        <Link href="/features">
-          <Button className="mb-6">View All Features</Button>
-        </Link>
-        <div className="flex flex-wrap justify-center gap-4">
+        <div className="flex flex-wrap justify-center gap-3">
+          <Link href="/agent/sales">
+            <Button className="bg-indigo-600 hover:bg-indigo-500">Sales Arya</Button>
+          </Link>
+          <Link href="/agent/sales?tab=selfsale">
+            <Button variant="outline">Sell Arya</Button>
+          </Link>
+          <Link href="/features">
+            <Button variant="outline">All Features</Button>
+          </Link>
+        </div>
+        <div className="flex flex-wrap justify-center gap-4 pt-4">
           <Card className="w-full max-w-xs">
             <CardHeader>
-              <CardTitle>Universal Sales Agent</CardTitle>
-              <CardDescription>Find buyers, contact them, hold conversations, close deals—any industry</CardDescription>
+              <CardTitle>Sales Arya</CardTitle>
+              <CardDescription>Find prospects, outreach, handle objections, close deals—any industry. Plus: Arya sells Arya.</CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/agent/sales">
-                <Button className="w-full">Launch Agent</Button>
+                <Button className="w-full">Launch Sales Agent</Button>
               </Link>
             </CardContent>
           </Card>

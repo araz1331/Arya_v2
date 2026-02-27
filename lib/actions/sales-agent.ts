@@ -151,3 +151,98 @@ Be direct but not aggressive. Create urgency without pressure.`;
   });
   return result.text;
 }
+
+// =============================================================================
+// 5. SELF-SALE - Arya sells Arya
+// =============================================================================
+
+const ARYA_PRODUCT = `Arya is an AI employee platform for SMEs. Multilingual AI employees:
+- Receptionist (phone, call-back)
+- Chatbot (site widget, WhatsApp, Telegram, social)
+- Sales Agent (hunt & close, any industry)
+- SMM Manager
+- HR Manager
+
+Subscription model. Users pick roles or bundles. Dashboard to train Arya via AI chat. All Aryas connected when bundled. Cybersecurity-first. Target: SMEs.`;
+
+export type SelfSaleIntent =
+  | "find_prospects"
+  | "outreach"
+  | "objection"
+  | "close"
+  | "pitch"
+  | "pricing";
+
+export interface SelfSaleInput {
+  intent: SelfSaleIntent;
+  context?: string;
+}
+
+export async function aryaSelfSale(input: SelfSaleInput): Promise<string> {
+  const systemInstruction = `You are Arya's Sales Agent. Your job is to sell Arya subscriptions to SMEs. You know Arya inside-out. Be consultative, not pushy. Help prospects see value. Handle objections with empathy. Close deals.
+
+Product knowledge:
+${ARYA_PRODUCT}
+
+Format output in clear sections with markdown.`;
+
+  const intentPrompts: Record<SelfSaleIntent, string> = {
+    find_prospects: `Identify ideal prospects for Arya (SMEs who would benefit from AI employees).
+
+${input.context ? `Additional context: ${input.context}` : ""}
+
+Provide:
+1. **Ideal Customer Profile** - Company size, industry, pain points that Arya solves
+2. **Where to Find Them** - LinkedIn, communities, events, associations
+3. **Qualification Criteria** - When is an SME ready for Arya?
+4. **Trigger Events** - Funding, hiring spree, scaling ops, etc.
+5. **Sample Segments** - 5-7 example SME types to target`,
+
+    outreach: `Generate cold outreach to sell Arya to an SME.
+
+${input.context ? `Prospect context: ${input.context}` : ""}
+
+Provide for EMAIL and LINKEDIN:
+1. **Subject line** (email) / **Connection note** (LinkedIn)
+2. **Message body** - 2-3 sentences, creates curiosity, low-friction CTA
+3. **Follow-up** if no response`,
+
+    objection: `A prospect said: "${input.context || "I'm not sure we need this"}"
+
+Provide:
+1. **Empathy** - Acknowledge (1 sentence)
+2. **Response** - Address the objection for Arya specifically
+3. **Redirect** - Question to move forward
+4. **Proof point** - One concrete benefit of Arya for SMEs`,
+
+    close: `Help close an Arya deal.
+
+${input.context ? `Deal context: ${input.context}` : ""}
+
+Provide:
+1. **Closing technique** and script
+2. **Handle "I need to think about it"**
+3. **Handle "We need to check with [stakeholder]"**
+4. **Clear next step** - e.g. trial, demo, proposal`,
+
+    pitch: `Write a 60-second elevator pitch for Arya to use when a prospect asks "What is Arya?"
+
+Include: what it is, who it's for, key benefit, one example use case, CTA.`,
+
+    pricing: `A prospect asked about Arya pricing.
+
+Provide:
+1. **Value-first response** - Don't lead with price; reinforce value
+2. **Pricing structure** - Subscription, role-based or bundled (we don't have fixed prices yet; suggest "plans for every size" and "custom for bundles")
+3. **ROI angle** - Why Arya pays for itself
+4. **Next step** - "Let's find the right plan for you" + CTA`,
+  };
+
+  const prompt = intentPrompts[input.intent];
+  const result = await generateThinkingContent({
+    prompt,
+    systemInstruction,
+    maxOutputTokens: 1536,
+  });
+  return result.text;
+}

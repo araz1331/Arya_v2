@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -11,6 +12,7 @@ import {
   Loader2,
   Copy,
   Check,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,19 +24,28 @@ import {
   generateOutreach,
   handleConversation,
   closeDeal,
+  aryaSelfSale,
+  type SelfSaleIntent,
 } from "@/lib/actions/sales-agent";
 
-type Tab = "find" | "outreach" | "conversation" | "close";
+type Tab = "find" | "outreach" | "conversation" | "close" | "selfsale";
 
 const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "find", label: "Find Prospects", icon: Target },
   { id: "outreach", label: "Contact", icon: Mail },
   { id: "conversation", label: "Conversation", icon: MessageCircle },
   { id: "close", label: "Close Deal", icon: Handshake },
+  { id: "selfsale", label: "Sell Arya", icon: Zap },
 ];
 
-export default function SalesAgentPage() {
+function SalesAgentContent() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>("find");
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "selfsale") setActiveTab("selfsale");
+  }, [searchParams]);
   const [result, setResult] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +70,10 @@ export default function SalesAgentPage() {
   // Close
   const [dealContext, setDealContext] = useState("");
   const [hesitation, setHesitation] = useState("");
+
+  // Self-sale (Arya sells Arya)
+  const [selfSaleIntent, setSelfSaleIntent] = useState<SelfSaleIntent>("find_prospects");
+  const [selfSaleContext, setSelfSaleContext] = useState("");
 
   function resetAndRun() {
     setError(null);
@@ -131,6 +146,23 @@ export default function SalesAgentPage() {
         productOrService: product || "our product/service",
         dealContext: dealContext || "prospect is interested but not committed",
         prospectHesitation: hesitation || undefined,
+      });
+      setResult(output);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed. Check GEMINI_API_KEY.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleSelfSale(e: React.FormEvent) {
+    e.preventDefault();
+    resetAndRun();
+    setIsLoading(true);
+    try {
+      const output = await aryaSelfSale({
+        intent: selfSaleIntent,
+        context: selfSaleContext || undefined,
       });
       setResult(output);
     } catch (err) {
@@ -405,6 +437,53 @@ export default function SalesAgentPage() {
           </form>
         )}
 
+        {activeTab === "selfsale" && (
+          <form onSubmit={handleSelfSale} className="space-y-6">
+            <Card className="border-amber-500/20 bg-amber-500/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-amber-400" />
+                  Sell Arya
+                </CardTitle>
+                <CardDescription className="text-white/60">
+                  Arya sells Arya. Hunt prospects, outreach, handle objections, close subscriptions.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>What do you need?</Label>
+                  <select
+                    value={selfSaleIntent}
+                    onChange={(e) => setSelfSaleIntent(e.target.value as SelfSaleIntent)}
+                    className="flex h-10 w-full rounded-md border border-white/20 bg-white/5 px-3 py-2 text-white"
+                  >
+                    <option value="find_prospects">Find prospects for Arya</option>
+                    <option value="outreach">Outreach message (email/LinkedIn)</option>
+                    <option value="objection">Handle objection</option>
+                    <option value="close">Close Arya deal</option>
+                    <option value="pitch">60-second pitch</option>
+                    <option value="pricing">Pricing question response</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Context (optional)</Label>
+                  <Textarea
+                    placeholder="e.g. VP Ops at 80-person logistics company, said 'we already have a receptionist'"
+                    value={selfSaleContext}
+                    onChange={(e) => setSelfSaleContext(e.target.value)}
+                    rows={2}
+                    className="border-white/20 bg-white/5 text-white placeholder:text-white/40"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            <Button type="submit" disabled={isLoading} className="bg-amber-600 hover:bg-amber-500">
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+              Generate
+            </Button>
+          </form>
+        )}
+
         {error && (
           <Card className="mt-8 border-red-500/30 bg-red-500/10">
             <CardContent className="pt-6">
@@ -436,5 +515,13 @@ export default function SalesAgentPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SalesAgentPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#0a0a0f] text-white">Loading...</div>}>
+      <SalesAgentContent />
+    </Suspense>
   );
 }
