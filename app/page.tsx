@@ -17,6 +17,9 @@ export default function HomePage() {
           <Link href="/agent/sales?tab=selfsale">
             <Button variant="outline">Sell Arya</Button>
           </Link>
+          <Link href="/reports">
+            <Button variant="outline">Reports</Button>
+          </Link>
           <Link href="/features">
             <Button variant="outline">All Features</Button>
           </Link>

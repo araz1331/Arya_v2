@@ -3,6 +3,7 @@
 import { generateThinkingContent } from "@/lib/services/gemini";
 import { sendEmail } from "@/lib/services/email";
 import { initiateOutboundCall } from "@/lib/services/twilio-voice";
+import { logEvent } from "@/lib/services/reporting";
 
 // =============================================================================
 // AI SALES EMAIL - Generate + Send
@@ -67,6 +68,13 @@ BODY:
     return { success: false, error, preview: `Subject: ${subject}\n\n${html.slice(0, 500)}...` };
   }
 
+  await logEvent("sales_email_sent", "sales", {
+    to: input.to,
+    subject,
+    prospectName: input.prospectName,
+    messageId: id,
+  });
+
   return { success: true, messageId: id, preview: `Subject: ${subject}\n\nSent to ${input.to}` };
 }
 
@@ -124,6 +132,13 @@ Requirements:
   if (error) {
     return { success: false, error, script };
   }
+
+  await logEvent("sales_call_made", "sales", {
+    to: input.to,
+    callSid: sid,
+    duration: input.callDuration,
+    scriptPreview: script.slice(0, 200),
+  });
 
   return { success: true, callSid: sid, script };
 }

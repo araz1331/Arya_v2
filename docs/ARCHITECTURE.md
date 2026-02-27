@@ -82,6 +82,7 @@ tasks (from onboarding)
 | `POST /api/telegram` | Telegram webhook |
 | `POST /api/stripe/webhook` | Subscription events |
 | `GET /api/twilio/voice/outbound` | TwiML for AI sales calls |
+| `GET /reports` | Reporting dashboard |
 
 ## Geo / Territory Setup (Sales)
 

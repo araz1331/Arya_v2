@@ -69,6 +69,12 @@
 | **Social links** | Planned | Smart links |
 | **SIP/PBX** | Future | Scale path |
 
+## Reporting
+
+- **arya_events** table: All Arya activities (sales, HR, chatbot, receptionist, SMM)
+- Event types: sales_email_sent, sales_call_made, hr_task_created, chat_message, etc.
+- Dashboard: `/reports` — summary cards, event list, filters by role and date
+
 ## Geo / Territory (Sales)
 
 | Region | Provider | Use |
